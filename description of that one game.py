@@ -423,7 +423,7 @@ class spaceShip:
 def asteroidMe():
     # Initialize pygame.
     p.init()
-
+    game_over = False
     # Set the width and height of the screen [width, height]
     size = (screenWidth, screenHeight)
     screen = p.display.set_mode(size)
@@ -436,6 +436,9 @@ def asteroidMe():
     # Loop until the user clicks the close button.
     running = True
     game_timer = 0
+    game_time = 0
+    last_spawn_time = 0  # Initialize the last asteroid spawn time
+    spawn_rate = 60
     # Used to manage how fast the screen updates
     clock = p.time.Clock()
 
@@ -462,10 +465,22 @@ def asteroidMe():
     # Clock/game frame things.
     tickTock = 0
 
+    clock = p.time.Clock()
+    counter, text = 180, '180'.rjust(3)
+    p.time.set_timer(p.USEREVENT, 1000)
+    font = p.font.SysFont('Consolas', 30)
+
     # -------- Main Program Loop -----------
     while running:
         # --- Main event loop
+        if counter <= 0 or text == 'boom!':  # You may need to adjust the condition
+            game_over = True
         for event in p.event.get():
+            if event.type == p.USEREVENT:
+                counter -= 1
+                text = str(counter).rjust(3) if counter > 0 else 'boom!'
+                if text == 'boom!':
+                    game_over = True
             if event.type == p.QUIT:
                 running = False
 
@@ -504,6 +519,8 @@ def asteroidMe():
                 shotCount = maxShootingDelay
 
         # --- Game logic should go here
+
+
         # Move bullets and asteroids.
         for b in bullets:
             b.moveMe()
@@ -528,7 +545,13 @@ def asteroidMe():
 
         # Inside the game loop, update the game_timer.
         game_timer += 1
+
         vitamin.timer += 1
+        game_time += 1
+        if game_time - last_spawn_time >= spawn_rate:
+            # Spawn a new asteroid
+            myAsteroids.append(speedyTriangle())
+            last_spawn_time = game_time  # Update the last spawn time
 
         # Check if 30 seconds have passed, and the vitamin is not active
         if vitamin.timer >= 1800 and not vitamin.active:
@@ -538,6 +561,7 @@ def asteroidMe():
         # Calculate the oriented position of the circle (Forcefield) centered on the ship.
         if game_timer <= 600:  # 60 frames per second for 10 seconds
             forcefield.x, forcefield.y = orientXY(ship.x, ship.y)
+
 
         # Check for collisions between green triangles and the circle (Forcefield).
         for a in myAsteroids:
@@ -583,6 +607,8 @@ def asteroidMe():
         # If you want a background image, replace this clear with blit'ing the
         # background image.
         screen.fill(BLACK)
+        counter_surface = font.render(text, True, WHITE)
+        screen.blit(counter_surface, (screenWidth - 200, 60))
 
         # --- Drawing code should go here
 
@@ -604,6 +630,36 @@ def asteroidMe():
 
         # Draw the vitamin
         vitamin.draw(screen)
+        # If the game is over, display the game over screen
+        if game_over:
+            screen.fill(BLACK)  # Clear the screen
+
+            game_over_text = font.render("You win!", True, WHITE)
+            restart_text = font.render("Press R to Restart", True, WHITE)
+            exit_text = font.render("Press Q to Quit", True, WHITE)
+
+            # Display game over message and options on the screen
+            screen.blit(game_over_text, (screenWidth // 2 - 70, screenHeight // 2 - 50))
+            screen.blit(restart_text, (screenWidth // 2 - 120, screenHeight // 2 + 20))
+            screen.blit(exit_text, (screenWidth // 2 - 90, screenHeight // 2 + 60))
+            p.display.flip()
+
+            for event in p.event.get():
+                if event.type == p.QUIT:
+                    running = False
+                if event.type == p.KEYDOWN:
+                    if event.key == p.K_q:
+                        p.quit()
+
+                    elif event.key == p.K_r:
+                        # Reset the game state if the player wants to restart
+                        game_over = False
+                        asteroidMe()
+
+                        # Reinitialize your game objects like ship, bullets, and asteroids
+                        ship = spaceShip(gameMidX, gameMidY, initialHeading, scaleFactor, basicShip)
+                        bullets = []
+                        myAsteroids = [speedyTriangle() for _ in range(nAsteroids)]
 
         # --- Go ahead and update the screen with what we've drawn.
         p.display.flip()
