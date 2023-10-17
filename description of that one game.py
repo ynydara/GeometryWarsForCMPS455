@@ -1,15 +1,15 @@
-#I want a ashtroid game that is similar to that one xbox game
+#I want a ashtroid game that is similar to that one xbox game geometry wars
 #shapes follow the player
 # player has 3 lives
 # each shape when defeated gives points
 # circle //red
 # triangle //green // faster than the other shapes
-# squares // yellow or blue
-# sheild for 10 seconds
-# when hit bigger ashtroid, it splits into two smaller ones and if smaller one, it deletes
+# squares // purple?
+
+# [squares] when hit bigger ashtroid, it splits into 4 smaller ones and if smaller one, it deletes
 # the amount of ashtroids increases for how long you play.
-# player has 3 lives
-#game keeps going until timer runs out or player runs out of lives
+
+
 
 # -*- coding: utf-8 -*-
 
@@ -32,9 +32,10 @@ BLUE = (0,0,255)
 colorPalette = [WHITE, GREEN, RED, ORANGE, YELLOW, CYAN, MAGENTA]
 nColors = len(colorPalette)
 
-screenWidth = 1600
-screenHeight = 850
-
+# screenWidth = 1600
+# screenHeight = 850
+screenWidth = 1500
+screenHeight = 750
 gameMidX = screenWidth/2
 gameMidY = screenHeight/2
 
@@ -44,18 +45,19 @@ maxRockVelocity = 2
 maxRockScaleFactor = 3
 maxRockTypes = 3
 
+
 rock0 = [[[3,0], [0,3], [6,0], [0,-3], [3,0]]]
 # rock1 = [[[1,2], [3,1], [3,-1], [1,-2], [-1,-2], 
 #          [-3,-1], [-3,1], [-1,2], [1,2]]]
 # rock2 = [[[1,1], [1,0], [1,-1], [-2,-1], [-2,1], [1,1]]]
 
 # spaceRocks = rock0 + rock1 + rock2
-spaceRocks = rock0
+spaceRocks = rock0 
 nRockTypes = len(spaceRocks)
 nAsteroids = 20
 
 maxExplodeCount = 30
-maxShootingDelay = 30
+maxShootingDelay = 20
 
 
 basicShip = [[3,0], [0,3], [6,0], [0,-3], [3,0]]
@@ -88,6 +90,55 @@ def rotatePoint(xc, yc, x, y, deg):
 
 # Objects.
 
+    
+class Forcefield:
+    def __init__(self, x, y):
+        self.x,self.y = orientXY(x,y)
+        self.radius = 60  # Adjust the radius as needed
+        self.active = True
+
+    def draw(self, screen):
+        if self.active:
+            x, y = orientXY(self.x, self.y)  # Orient the position
+            p.draw.circle(screen, RED, (int(x), int(y)), self.radius, 2)
+
+# Create an instance of the Forcefield at the ship's starting position.
+forcefield = Forcefield(gameMidX, gameMidY)
+
+class Vitamin:
+    def __init__(self):
+        self.x = random.randint(0, screenWidth - 1)
+        self.y = random.randint(0, screenHeight - 1)
+        self.width = 20  # Adjust the width as needed
+        self.height = 20  # Adjust the height as needed
+        self.active = False
+        self.timer = 0
+
+    def activate(self):
+        self.x = random.randint(0, screenWidth - 1)
+        self.y = random.randint(0, screenHeight - 1)
+        self.active = True
+
+    def draw(self, screen):
+        if self.active:
+            x, y = orientXY(self.x, self.y)
+            print(x,y)
+            p.draw.rect(screen, BLUE, [x, y, 200, 200])
+
+    def checkCollision(self, shipx, shipy):
+        if self.active:
+            boxx1, boxy1 = self.x, self.y
+            #x2, y2 = x1 + self.width, y1 + self.height
+            boxx2, boxy2 = boxx1 + 200, boxy1 - 200
+            # p.draw.rect(screen, RED, [boxx2, boxx1] )
+            if (((shipx >= boxx1) and (shipx <= boxx2)) and ((shipy >= boxy1) and (shipy <= boxy2))):
+                self.active = False
+                return True
+            # if x or y >= self.x 
+        return False
+
+# Create an instance of the Vitamin class
+vitamin = Vitamin()
 class speedyTriangle:
     def __init__(self):
         self.x = random.randint(0, screenWidth - 1)
@@ -95,7 +146,11 @@ class speedyTriangle:
         self.heading = random.randint(0, 359)
         self.xVel = random.randint(-maxRockVelocity, maxRockVelocity)
         self.yVel = random.randint(-maxRockVelocity, maxRockVelocity)
+        self.Icollided = False
+        
         # self.scaleFactorX = random.randint(1, maxRockScaleFactor)
+        # self.myRadius = self.x / 2
+        self.myRadius = 20
         self.scaleFactorX = 4
         self.scaleFactorY = 4
         # self.scaleFactorY = random.randint(1, maxRockScaleFactor)
@@ -128,17 +183,66 @@ class speedyTriangle:
         self.maxX = max(xs)
         self.minY = min(ys)
         self.maxY = max(ys)
-                      
+        
+        # Find average x and y of the points.
+        xav = []
+        for x in xs:
+            xav.append(abs(x))
+            
+        yav = []
+        for y in ys:
+            yav.append(abs(y))
+            
+        xmean = sum(xav)/len(xav)
+        ymean = sum(yav)/len(yav)
+        # Find a radius for bounce detection.
+        self.bounceRadius = math.sqrt(xmean * xmean + ymean * ymean)
+        self.bouncing = False
+
+        index = random.randint(0, nColors - 1)
+        self.color = colorPalette[index]
+
+        self.isActive = True
+
         index = random.randint(0, nColors - 1)
         self.color = GREEN
         
         self.isActive = True
         
-    def moveMe(self):
+    def moveMe(self, spaceshipX, spaceshipY): 
         # Calculate new positon of space rock based on it's velocity.
-        self.x = self.x + self.xVel
-        self.y = self.y + self.yVel
-        
+
+        #need to modify this so that the triangles will locate the ship and move to it
+        # self.x = spaceShip.getxy(spaceship) + self.xVel
+        # self.x = self.x + self.xVel
+
+        # self.y = self.y + self.yVel
+         # Calculate angle to player's ship
+        angle = math.degrees(math.atan2(spaceshipY- self.y, spaceshipX - self.x))
+
+        # Set the heading angle to chase the player
+        self.heading = angle
+        # if (self.Icollided == False): 
+        #     if self.x < spaceshipX:
+        #         self.x = self.x +1
+        #     if self.x > spaceshipX:
+        #         self.x = self.x -1
+        #     if self.y < spaceshipY:
+        #         self.y = self.y +1
+        #     if self.y > spaceshipY:
+        #         self.y = self.y -1
+        # if self.Icollided == True:
+        #     self.x = self.x+1
+        if self.Icollided == False:
+            if self.x < spaceshipX:
+                self.x = self.x +3
+            if self.x > spaceshipX:
+                self.x = self.x -3
+            if self.y < spaceshipY:
+                self.y = self.y +3
+            if self.y > spaceshipY:
+                self.y = self.y -3
+            #find arctan between the two points and thats the heading
         # If rock is outside of game space wrap it to other side.
         if (self.x < 0):
             self.x = screenWidth - 1
@@ -151,6 +255,36 @@ class speedyTriangle:
             self.y = 0
             
         return
+    def didAstroidsCollide(self, x1, y1, br1):
+            whack = False
+            astroidDist = getDist(x1, y1, self.x, self.y)
+            whackDist = self.bounceRadius + br1
+            if (astroidDist < whackDist):
+                whack = True
+            
+            return whack
+    def bounce(self):
+        xOrY = random.randint(0, 100)
+        if (xOrY < 50):
+            self.xVel = -1 * self.xVel
+        else:
+            self.yVel = -1 * self.yVel
+        return
+
+    def didCollideWithOtherTriangles(triangle1x, triangle1y, triangle2x, triangle2y, triangle1Radius, triangle2Radius, triangle1, triangle2):
+        distance = (math.sqrt((triangle1x-triangle2x)**2) + (math.sqrt((triangle1y-triangle2y)**2)))
+        AddRad = triangle1Radius + triangle2Radius
+        if distance < AddRad:
+            triangle1.yVel=0
+            triangle2.yVel=0
+            triangle1.xVel=0
+            triangle2.xVel = 0
+            # triangle1.y=0
+            # triangle2.y=0
+            # triangle1.x=0
+            # triangle2.x = 0
+            
+            return True
         
     def drawMe(self, screen):
         if (self.isActive):
@@ -184,12 +318,13 @@ class speedyTriangle:
             p.draw.polygon(screen, self.color, points, width = 2)
         return
     
-    def checkCollision(self, x, y):
+    def checkCollision(self, x, y,stayAlive):
         smack = False
         if ((x >= self.minX+self.x) and (x <= self.maxX+self.x)):
             
             if ((y >= self.minY+self.y) and (y <= self.maxY+self.y)):
                 smack = True
+                self.isActive = stayAlive
         return smack
 
 class bullet:
@@ -217,7 +352,7 @@ class bullet:
                 if (self.explodeCount == maxExplodeCount):
                     self.isActive = False
             else:
-                p.draw.circle(surface, color, center, self.radius, width = 1)
+                p.draw.circle(surface, color, center, self.radius, width = 2)
             
             
         
@@ -261,7 +396,10 @@ class spaceShip:
         
         return
     
-    
+    def getxy(self):
+        x = self.x
+        y= self.y
+        return x,y
     def setGunSpot(self, gunSpot):
         self.gunSpot = gunSpot
         return
@@ -339,12 +477,15 @@ class spaceShip:
             
         return
         
-        
+class forceField():
+    def __init__(self, spaceShipX, spaceShipY):
+        pass
+    print("force field activated")       
 
 def asteroidMe():
     # Initialize pygame.
     p.init()
-    
+    game_over = False
     # Set the width and height of the screen [width, height]
     size = (screenWidth, screenHeight)
     screen = p.display.set_mode(size)
@@ -356,7 +497,10 @@ def asteroidMe():
      
     # Loop until the user clicks the close button.
     running = True 
-     
+    game_timer = 0
+    game_time = 0
+    last_spawn_time = 0 
+    spawn_rate = 60
     # Used to manage how fast the screen updates
     clock = p.time.Clock()
     
@@ -365,7 +509,7 @@ def asteroidMe():
     initialHeading = 90
     scaleFactor = 6
     ship = spaceShip(gameMidX, gameMidY, initialHeading, scaleFactor, basicShip)
-    shipSpeed = 3
+    shipSpeed = 8
     ship.setGunSpot([6,0])
     
     # Bullet stuff
@@ -382,10 +526,22 @@ def asteroidMe():
     # Clock/game frame things.
     tickTock = 0
     
+    clock = p.time.Clock()
+    counter, text = 180, '180'.ljust(5)
+    p.time.set_timer(p.USEREVENT, 1000)
+    font = p.font.SysFont('Consolas', 30)
     # -------- Main Program Loop -----------
     while running:
+        if counter <= 0 or text == 'boom!':  
+            game_over = True
         # --- Main event loop
+        
         for event in p.event.get():
+            if event.type == p.USEREVENT: 
+                counter -= 1
+                text = str(counter).ljust(15) if counter > 0 else 'boom!'
+            if text == 'boom!':
+                game_over = True
             if event.type == p.QUIT:
                 running = False
         
@@ -410,6 +566,7 @@ def asteroidMe():
             # ship.turn(1)
             pass
         if (key[p.K_a]==True):
+
             ship.turn(1)
         if (key[p.K_RIGHT] == True):
             # ship.turn(-1)
@@ -427,19 +584,100 @@ def asteroidMe():
         # Move bullets and asteroids.
         for b in bullets:
             b.moveMe()
+
+        # for a in  myAsteroids:
+        #     for A in myAsteroids:moveMe
+        #         if (a != A) {
+        #             # check for collision
+        #             # if collision == true, then do not move triangle
+        #         }
             
         for a in myAsteroids:
-            a.moveMe()
+            x,y = spaceShip.getxy(ship)
+            a.moveMe(x,y)
             
+        for a in myAsteroids:
+            triangle1x = a.x
+            triangle1y = a.y
+            triangle1Rad = a.myRadius
+            # triangle1Vel = a.yVel
+            
+            for b in myAsteroids:
+                triangle2x = b.x
+                triangle2y = b.y
+                triangle2Rad = b.myRadius
+                # triangle2Vel = b.yVel
+                if (a!=b):
+                    #myQuestion = speedyTriangle.didCollideWithOtherTriangles(triangle1x, triangle1y, triangle2x, triangle2y,triangle1Rad, triangle2Rad, a, b)
+                    myDist = getDist(a.x, a.y, b.x, b.y)
+                    #tooClose = a.myRadius + b.myRadius
+                    tooClose = 20
+                    if (myDist < tooClose):
+                        a.Icollided = True
+                        b.Icollided = True
+    
+    
+                    if b.Icollided == True:
+                        a.Icollided = False
+                        b.x = b.x-0.1
+                        b.y = b.y-0.1
+                        a.x = a.x+0.1
+                        a.y = a.y - 0.1
+        game_timer += 1
+        vitamin.timer += 1
+        game_time += 1
+        if game_time - last_spawn_time >= spawn_rate:
+            myAsteroids.append(speedyTriangle())
+            last_spawn_time = game_time 
+        if vitamin.timer >= 1800 and not vitamin.active:
+            vitamin.activate()
+            vitamin.timer = 0
+
+        # Calculate the oriented position of the circle (Forcefield) centered on the ship.
+        if game_timer <= 600:  # 60 frames per second for 10 seconds
+            forcefield.x, forcefield.y = orientXY(ship.x, ship.y)   
         # Check to see if a bullet hit an asteroid.
         for a in myAsteroids:
+            if a.isActive:
+                # Check if the circle (Forcefield) and the green triangle collide with outer edge.
+                forcefield_center_x, forcefield_center_y = forcefield.x, forcefield.y
+                triangle_x, triangle_y = orientXY(a.x, a.y)
+                distance = getDist(forcefield_center_x, forcefield_center_y, triangle_x, triangle_y)
+                if game_timer <= 600 and distance < (
+                        forcefield.radius + 3):  # 3 is a buffer to prevent touching the ship
+                    # Destroy the green triangle.
+                    a.isActive = False
             for b in bullets:
                 if (a.isActive and b.isActive):
-                    smacked = a.checkCollision(b.x, b.y)
+                    smacked = a.checkCollision(b.x, b.y, True)
                     if (smacked == True):
                         b.setExplosion()
                         a.isActive = False
-                    
+            if vitamin.checkCollision(ship.x, ship.y):
+            # Reactivate the forcefield for another ten seconds.
+                game_timer = 0
+            if game_timer <= 600:
+            # Only perform the check for the first 10 seconds
+                for a in myAsteroids:
+                    if a.isActive:
+                        forcefield_center_x, forcefield_center_y = forcefield.x, forcefield.y
+                        triangle_x, triangle_y = orientXY(a.x, a.y)
+                        distance = getDist(forcefield_center_x, forcefield_center_y, triangle_x, triangle_y)
+                        if distance < (forcefield.radius + a.bounceRadius):
+                            a.exploding = True  # Set the exploding flag for the asteroid
+                            a.isActive = False
+        # for a in myAsteroids:
+        #     for A in myAsteroids:
+        #         if (a != A):
+        #             if (a.isActive and A.isActive):
+        #                 if (a.bouncing == False) and (A.bouncing == False):
+        #                     smacked = a.checkCollision(A.x, A.y, True)
+        #                     #whacked = a.didAstroidsCollide(A.x, A.y, A.bounceRadius)
+        #                     if (smacked == True):
+        #                         a.bounce()
+        #                         A.bounce()
+        #                         a.bouncing = True
+        #                         A.bouncing = True
         # --- Screen-clearing code goes here
      
         # Here, we clear the screen to black. Don't put other drawing commands
@@ -448,19 +686,53 @@ def asteroidMe():
         # If you want a background image, replace this clear with blit'ing the
         # background image.
         screen.fill(BLACK)
-     
+        counter_surface = font.render(text, True, WHITE)
+        screen.blit(counter_surface, (screenWidth - 200, 60))
         # --- Drawing code should go here
         # Spaceship
         ship.drawMe(screen, WHITE, basicShip)
         
         # Bullets
         for b in bullets:
-            b.drawMe(screen, BLUE)
+            b.drawMe(screen, CYAN)
             
         # Asteroids
         for a in myAsteroids:
             a.drawMe(screen)
-              
+        if game_timer <= 600:  # 60 frames per second for 10 seconds
+            forcefield.x, forcefield.y = ship.x, ship.y
+            forcefield.draw(screen)
+        vitamin.draw(screen) 
+        if game_over:
+            screen.fill(BLACK)  # Clear the screen
+
+            game_over_text = font.render("You win!", True, WHITE)
+            restart_text = font.render("Press R to Restart", True, WHITE)
+            exit_text = font.render("Press Q to Quit", True, WHITE)
+
+            # Display game over message and options on the screen
+            screen.blit(game_over_text, (screenWidth // 2 - 70, screenHeight // 2 - 50))
+            screen.blit(restart_text, (screenWidth // 2 - 120, screenHeight // 2 + 20))
+            screen.blit(exit_text, (screenWidth // 2 - 90, screenHeight // 2 + 60))
+            p.display.flip()
+
+            for event in p.event.get():
+                if event.type == p.QUIT:
+                    running = False
+                if event.type == p.KEYDOWN:
+                    if event.key == p.K_q:
+                        p.quit()
+
+                    elif event.key == p.K_r:
+                        # Reset the game state if the player wants to restart
+                        game_over = False
+                        asteroidMe()
+
+                        # Reinitialize your game objects like ship, bullets, and asteroids
+                        ship = spaceShip(gameMidX, gameMidY, initialHeading, scaleFactor, basicShip)
+                        bullets = []
+                        myAsteroids = [speedyTriangle() for _ in range(nAsteroids)]
+     
         # --- Go ahead and update the screen with what we've drawn.
         p.display.flip()
      
