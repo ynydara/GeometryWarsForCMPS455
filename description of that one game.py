@@ -33,7 +33,7 @@ BLUE = (0,0,255)
 background_image = p.image.load("hyrule.jpg")
 
 
-colorPalette = [WHITE, GREEN, RED, ORANGE, YELLOW, CYAN, MAGENTA]
+colorPalette = [BLACK, GREEN, RED, ORANGE, YELLOW, MAGENTA]
 nColors = len(colorPalette)
 
 # screenWidth = 1600
@@ -728,11 +728,11 @@ def asteroidMe():
         screen.blit(counter_surface, (screenWidth - 200, 60))
         # --- Drawing code should go here
         # Spaceship
-        ship.drawMe(screen, WHITE, basicShip)
+        ship.drawMe(screen, BLACK, basicShip)
         
         # Bullets
         for b in bullets:
-            b.drawMe(screen, CYAN)
+            b.drawMe(screen, RED)
             
         # Asteroids
         for a in myAsteroids:
@@ -775,7 +775,7 @@ def asteroidMe():
      
         # --- Go ahead and update the screen with what we've drawn.
         font = p.font.SysFont('Consolas', 30)
-        points_text = font.render("Points: {}".format(special), True, WHITE)
+        points_text = font.render("Points: {}".format(special), True, BLACK)
         screen.blit(points_text, (150, 20))
         p.display.flip()
      
