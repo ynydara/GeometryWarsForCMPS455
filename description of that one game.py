@@ -17,6 +17,7 @@
 import pygame as p
 import random
 import math
+import pygame.mixer as mixer
 
 # Define some colors
 BLACK = (0, 0, 0)
@@ -122,20 +123,27 @@ class Vitamin:
     def draw(self, screen):
         if self.active:
             x, y = orientXY(self.x, self.y)
-            print(x,y)
-            p.draw.rect(screen, BLUE, [x, y, 200, 200])
+            p.draw.rect(screen, BLUE, [x, y, self.width, self.height])
 
-    def checkCollision(self, shipx, shipy):
+    def checkCollision(self, spaceShipX, spaceShipY):
         if self.active:
-            boxx1, boxy1 = self.x, self.y
-            #x2, y2 = x1 + self.width, y1 + self.height
-            boxx2, boxy2 = boxx1 + 200, boxy1 - 200
-            # p.draw.rect(screen, RED, [boxx2, boxx1] )
-            if (((shipx >= boxx1) and (shipx <= boxx2)) and ((shipy >= boxy1) and (shipy <= boxy2))):
-                self.active = False
+            vitamin_x, vitamin_y = self.x, self.y
+            vitamin_width, vitamin_height = self.width, self.height
+
+            # Calculate the boundaries of the vitamin item
+            vitamin_left = vitamin_x
+            vitamin_right = vitamin_x + vitamin_width
+            vitamin_top = vitamin_y
+            vitamin_bottom = vitamin_y + vitamin_height
+
+            # Check if the spaceship's coordinates are within the vitamin's boundaries
+            if (spaceShipX >= vitamin_left and spaceShipX <= vitamin_right and
+                    spaceShipY >= vitamin_top and spaceShipY <= vitamin_bottom):
+                self.active = False  # Deactivate the vitamin item
                 return True
-            # if x or y >= self.x 
+
         return False
+
 
 # Create an instance of the Vitamin class
 vitamin = Vitamin()
@@ -371,6 +379,7 @@ class bullet:
     
     def setExplosion(self):
         self.exploding = True
+        mixer.Sound('asteroid-hitting-something-152511.mp3').play()
         
 
 class spaceShip:
@@ -485,6 +494,10 @@ class forceField():
 def asteroidMe():
     # Initialize pygame.
     p.init()
+    mixer.init()
+
+    mixer.music.load('Ephixa - Zelda Step - 04 Gerudo Valley Dubstep Remix.mp3')
+    mixer.music.play(-1)  # -1 means the music will loop indefinitely
     game_over = False
     # Set the width and height of the screen [width, height]
     size = (screenWidth, screenHeight)
@@ -527,11 +540,13 @@ def asteroidMe():
     tickTock = 0
     
     clock = p.time.Clock()
-    counter, text = 180, '180'.ljust(5)
+    counter, text = 120, '120'.ljust(5)
     p.time.set_timer(p.USEREVENT, 1000)
     font = p.font.SysFont('Consolas', 30)
     # -------- Main Program Loop -----------
     while running:
+
+
         if counter <= 0 or text == 'boom!':  
             game_over = True
         # --- Main event loop
@@ -578,6 +593,8 @@ def asteroidMe():
                 gunX, gunY = ship.getGunSpot()
                 myBullet = bullet(gunX, gunY, ship.heading, bulletSize, bulletSpeed)
                 bullets.append(myBullet)
+                mixer.Sound('zap_c_07-82067.mp3').play()
+
                 shotCount = maxShootingDelay
             
         # --- Game logic should go here
@@ -705,6 +722,8 @@ def asteroidMe():
         vitamin.draw(screen) 
         if game_over:
             screen.fill(BLACK)  # Clear the screen
+            mixer.music.stop()
+            mixer.Sound('item-catch.mp3').play()
 
             game_over_text = font.render("You win!", True, WHITE)
             restart_text = font.render("Press R to Restart", True, WHITE)
