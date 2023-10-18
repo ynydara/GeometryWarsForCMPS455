@@ -30,6 +30,9 @@ CYAN = (0, 255, 255)
 MAGENTA = (255, 0, 255)
 BLUE = (0,0,255)
 
+background_image = p.image.load("hyrule.jpg")
+
+
 colorPalette = [WHITE, GREEN, RED, ORANGE, YELLOW, CYAN, MAGENTA]
 nColors = len(colorPalette)
 
@@ -39,6 +42,9 @@ screenWidth = 1500
 screenHeight = 750
 gameMidX = screenWidth/2
 gameMidY = screenHeight/2
+
+background_image = p.transform.scale(background_image, (screenWidth, screenHeight))
+
 
 # General constants and variables defined.
 # Space rock variables.
@@ -702,8 +708,8 @@ def asteroidMe():
      
         # If you want a background image, replace this clear with blit'ing the
         # background image.
-        screen.fill(BLACK)
-        counter_surface = font.render(text, True, WHITE)
+        screen.blit(background_image, (0, 0))
+        counter_surface = font.render(text, True, BLACK)
         screen.blit(counter_surface, (screenWidth - 200, 60))
         # --- Drawing code should go here
         # Spaceship
