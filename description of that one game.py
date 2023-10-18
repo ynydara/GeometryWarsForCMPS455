@@ -3,11 +3,11 @@
 # player has 3 lives
 # each shape when defeated gives points
 # circle //red
-# triangle //green // faster than the other shapes
+
 # squares // purple?
 
 # [squares] when hit bigger ashtroid, it splits into 4 smaller ones and if smaller one, it deletes
-# the amount of ashtroids increases for how long you play.
+
 
 
 
@@ -129,10 +129,13 @@ class Vitamin:
     def draw(self, screen):
         if self.active:
             x, y = orientXY(self.x, self.y)
+
             p.draw.rect(screen, BLUE, [x, y, self.width, self.height])
+
 
     def checkCollision(self, spaceShipX, spaceShipY):
         if self.active:
+
             vitamin_x, vitamin_y = self.x, self.y
             vitamin_width, vitamin_height = self.width, self.height
 
@@ -146,6 +149,7 @@ class Vitamin:
             if (spaceShipX >= vitamin_left and spaceShipX <= vitamin_right and
                     spaceShipY >= vitamin_top and spaceShipY <= vitamin_bottom):
                 self.active = False  # Deactivate the vitamin item
+
                 return True
 
         return False
@@ -218,8 +222,10 @@ class speedyTriangle:
 
         self.isActive = True
 
+        # index = random.randint(0, nColors - 1)
+        # self.color = GREEN
         index = random.randint(0, nColors - 1)
-        self.color = GREEN
+        self.color = colorPalette[index]
         
         self.isActive = True
         
@@ -339,6 +345,7 @@ class speedyTriangle:
             if ((y >= self.minY+self.y) and (y <= self.maxY+self.y)):
                 smack = True
                 self.isActive = stayAlive
+                
         return smack
 
 class bullet:
@@ -500,10 +507,14 @@ class forceField():
 def asteroidMe():
     # Initialize pygame.
     p.init()
+
+    special = 0
+
     mixer.init()
 
     mixer.music.load('Ephixa - Zelda Step - 04 Gerudo Valley Dubstep Remix.mp3')
     mixer.music.play(-1)  # -1 means the music will loop indefinitely
+
     game_over = False
     # Set the width and height of the screen [width, height]
     size = (screenWidth, screenHeight)
@@ -673,9 +684,11 @@ def asteroidMe():
             for b in bullets:
                 if (a.isActive and b.isActive):
                     smacked = a.checkCollision(b.x, b.y, True)
+                    # special+=100
                     if (smacked == True):
                         b.setExplosion()
                         a.isActive = False
+                        special+=100
             if vitamin.checkCollision(ship.x, ship.y):
             # Reactivate the forcefield for another ten seconds.
                 game_timer = 0
@@ -708,8 +721,10 @@ def asteroidMe():
      
         # If you want a background image, replace this clear with blit'ing the
         # background image.
+
         screen.blit(background_image, (0, 0))
         counter_surface = font.render(text, True, BLACK)
+
         screen.blit(counter_surface, (screenWidth - 200, 60))
         # --- Drawing code should go here
         # Spaceship
@@ -759,6 +774,9 @@ def asteroidMe():
                         myAsteroids = [speedyTriangle() for _ in range(nAsteroids)]
      
         # --- Go ahead and update the screen with what we've drawn.
+        font = p.font.SysFont('Consolas', 30)
+        points_text = font.render("Points: {}".format(special), True, WHITE)
+        screen.blit(points_text, (150, 20))
         p.display.flip()
      
         # --- Limit to 60 frames per second
